@@ -1,24 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snake-the-Snake.io</title>
-  <link rel="stylesheet" href="https://pyscript.net/releases/2025.11.1/core.css" />
-  <script type="module" src="https://pyscript.net/releases/2025.11.1/core.js"></script>
-  <style>
-    canvas {
-      background: #000;
-      display: block;
-      margin: 20px auto;
-    }
-    body { text-align: center; color: white; font-family: sans-serif; background: #222; }
-  </style>
+<meta charset="UTF-8">
+<title>Snake Game</title>
+<link rel="stylesheet" href="https://pyscript.net/releases/2025.11.1/pyscript.css">
+<script defer src="https://pyscript.net/releases/2025.11.1/pyscript.js"></script>
+<style>
+  body { background-color: black; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  canvas { border: 2px solid white; }
+</style>
 </head>
 <body>
-<h1>Snake-the-Snake.io</h1>
-<canvas id="game" width="400" height="400"></canvas>
+<canvas id="game" width="600" height="400"></canvas>
+<py-script>
+from js import document, setInterval, clearInterval
+from pyodide.ffi import create_once_callable
+from random import randint
 
-<py-script src="snake (website).py"></py-script>
+canvas = document.getElementById("game")
+ctx = canvas.getContext("2d")
+CELL = 20
+WIDTH = canvas.width // CELL
+HEIGHT = canvas.height // CELL
+
+snake = [[WIDTH//4, HEIGHT//2], [WIDTH//4-1, HEIGHT//2], [WIDTH//4-2, HEIGHT//2], [WIDTH//4-3, HEIGHT//2]]
+direction = [1,0]
+score = 0
+INITIAL_SPEED = 150
+MIN_SPEED = 30
+SPEED_DECREMENT = 5
+food = [randint(0,WIDTH-1), randint(0,HEIGHT-1)]
+while food in snake:
+    food = [randint(0,WIDTH-1), randint(0,HEIGHT-1)]
+
+key_proxy = None
+
+def draw():
+    ctx.fillStyle = "black"
+    ctx.fillRect(0,0,canvas.width,canvas.height)
+    ctx.fillStyle = "red"
+    ctx.font = f"{CELL}px sans-serif"
+    ctx.fillText("", food[0]*CELL, (food[1]+1)*CELL)
+    ctx.fillStyle = "lime"
+    for x,y in snake:
+        ctx.fillRect(x*CELL, y*CELL, CELL, CELL)
+    ctx.fillStyle = "white"
+    ctx.font = "16px sans-serif"
+    ctx.fillText(f"Score: {score}", 10, 20)
+
+def game_over():
+    clearInterval(game_loop)
+    ctx.fillStyle = "white"
+    ctx.font = "20px sans-serif"
+    ctx.fillText(f"Game Over! Score: {score}", 50, canvas.height//2)
+
+def move():
+    global snake, food, score, game_loop
+    new_head = [snake[0][0]+direction[0], snake[0][1]+direction[1]]
+    if new_head in snake or not (0<=new_head[0]<WIDTH) or not (0<=new_head[1]<HEIGHT):
+        game_over()
+        return
+    snake.insert(0,new_head)
+    if new_head == food:
+        score += 1
+        new_speed = INITIAL_SPEED - score*SPEED_DECREMENT
+        if new_speed < MIN_SPEED:
+            new_speed = MIN_SPEED
+        clearInterval(game_loop)
+        game_loop = setInterval(move,new_speed)
+        while True:
+            nf = [randint(0,WIDTH-1), randint(0,HEIGHT-1)]
+            if nf not in snake:
+                food[:] = nf
+                break
+    else:
+        snake.pop()
+    draw()
+
+def key(event):
+    global direction
+    event.preventDefault()
+    k = event.key
+    m = {"ArrowUp":[0,-1],"ArrowDown":[0,1],"ArrowLeft":[-1,0],"ArrowRight":[1,0]}
+    if k in m:
+        new_dir = m[k]
+        if [new_dir[0],new_dir[1]] != [-direction[0],-direction[1]]:
+            direction[:] = new_dir
+
+def init():
+    global game_loop, key_proxy
+    key_proxy = create_once_callable(key)
+    document.addEventListener("keydown", key_proxy)
+    game_loop = setInterval(move,INITIAL_SPEED)
+    draw()
+
+init()
+</py-script>
 </body>
 </html>
