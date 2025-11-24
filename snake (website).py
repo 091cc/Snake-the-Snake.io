@@ -3,7 +3,6 @@ from random import randint
 
 canvas = document.getElementById("game")
 ctx = canvas.getContext("2d")
-
 CELL = 20
 WIDTH = canvas.width // CELL
 HEIGHT = canvas.height // CELL
@@ -18,6 +17,7 @@ SPEED_DECREMENT = 5
 food = [randint(0, WIDTH-1), randint(0, HEIGHT-1)]
 while food in snake:
     food = [randint(0, WIDTH-1), randint(0, HEIGHT-1)]
+
 def draw():
     ctx.fillStyle = "black"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -25,11 +25,10 @@ def draw():
     ctx.fillStyle = "red"
     ctx.font = f"{CELL}px sans-serif"
     ctx.fillText("", food[0]*CELL, (food[1]+1)*CELL)
-
     ctx.fillStyle = "lime"
     for x, y in snake:
         ctx.fillRect(x*CELL, y*CELL, CELL, CELL)
-
+        
     ctx.fillStyle = "white"
     ctx.font = "16px sans-serif"
     ctx.fillText(f"Score: {score}", 10, 20)
@@ -41,7 +40,7 @@ def game_over():
     ctx.fillText(f"Game Over! Score: {score}", 50, canvas.height//2)
 
 def move():
-    global snake, food, score, game_loop, INITIAL_SPEED
+    global snake, food, score, game_loop
     new_head = [snake[0][0] + direction[0], snake[0][1] + direction[1]]
 
     if new_head in snake or not (0 <= new_head[0] < WIDTH) or not (0 <= new_head[1] < HEIGHT):
@@ -55,6 +54,7 @@ def move():
         new_speed = INITIAL_SPEED - score*SPEED_DECREMENT
         if new_speed < MIN_SPEED:
             new_speed = MIN_SPEED
+        clearInterval(game_loop)
         game_loop = setInterval(move, new_speed)
 
         while True:
@@ -69,6 +69,7 @@ def move():
 
 def key(event):
     global direction
+    event.preventDefault()
     key_map = {
         "ArrowUp": [0, -1],
         "ArrowDown": [0, 1],
