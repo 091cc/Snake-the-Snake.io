@@ -19,6 +19,8 @@ food = [randint(0, WIDTH-1), randint(0, HEIGHT-1)]
 while food in snake:
     food = [randint(0, WIDTH-1), randint(0, HEIGHT-1)]
 
+key_proxy = None
+
 def draw():
     ctx.fillStyle = "black"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -77,7 +79,7 @@ def key(event):
             direction[:] = new_dir
 
 def init():
-    global game_loop
+    global game_loop, key_proxy
     key_proxy = create_once_callable(key)
     document.addEventListener("keydown", key_proxy)
     game_loop = setInterval(move, INITIAL_SPEED)
