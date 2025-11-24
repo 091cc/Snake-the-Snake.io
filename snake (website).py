@@ -1,4 +1,5 @@
 from js import document, setInterval, clearInterval, setTimeout
+from pyodide.ffi import create_proxy
 from random import randint
 
 canvas = document.getElementById("game")
@@ -27,7 +28,6 @@ def draw():
     ctx.fillStyle = "lime"
     for x, y in snake:
         ctx.fillRect(x*CELL, y*CELL, CELL, CELL)
-
     ctx.fillStyle = "white"
     ctx.font = "16px sans-serif"
     ctx.fillText(f"Score: {score}", 10, 20)
@@ -82,8 +82,9 @@ def key(event):
             direction[:] = new_dir
 
 def init():
-    document.addEventListener("keydown", key)
     global game_loop
+    key_proxy = create_proxy(key)
+    document.addEventListener("keydown", key_proxy)
     game_loop = setInterval(move, INITIAL_SPEED)
     draw()
 
