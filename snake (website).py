@@ -1,5 +1,5 @@
 from js import document, setInterval, clearInterval, setTimeout
-from pyodide.ffi import create_proxy
+from pyodide.ffi import create_once_callable
 from random import randint
 
 canvas = document.getElementById("game")
@@ -41,13 +41,10 @@ def game_over():
 def move():
     global snake, food, score, game_loop
     new_head = [snake[0][0] + direction[0], snake[0][1] + direction[1]]
-
     if new_head in snake or not (0 <= new_head[0] < WIDTH) or not (0 <= new_head[1] < HEIGHT):
         game_over()
         return
-
     snake.insert(0, new_head)
-
     if new_head == food:
         score += 1
         new_speed = INITIAL_SPEED - score*SPEED_DECREMENT
@@ -55,7 +52,6 @@ def move():
             new_speed = MIN_SPEED
         clearInterval(game_loop)
         game_loop = setInterval(move, new_speed)
-
         while True:
             nf = [randint(0, WIDTH-1), randint(0, HEIGHT-1)]
             if nf not in snake:
@@ -63,7 +59,6 @@ def move():
                 break
     else:
         snake.pop()
-
     draw()
 
 def key(event):
@@ -83,7 +78,7 @@ def key(event):
 
 def init():
     global game_loop
-    key_proxy = create_proxy(key)
+    key_proxy = create_once_callable(key)
     document.addEventListener("keydown", key_proxy)
     game_loop = setInterval(move, INITIAL_SPEED)
     draw()
