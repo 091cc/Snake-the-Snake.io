@@ -1,4 +1,4 @@
-from js import document, setInterval, clearInterval
+from js import document, setInterval, clearInterval, setTimeout
 from random import randint
 
 canvas = document.getElementById("game")
@@ -21,14 +21,13 @@ while food in snake:
 def draw():
     ctx.fillStyle = "black"
     ctx.fillRect(0, 0, canvas.width, canvas.height)
-
     ctx.fillStyle = "red"
     ctx.font = f"{CELL}px sans-serif"
     ctx.fillText("", food[0]*CELL, (food[1]+1)*CELL)
     ctx.fillStyle = "lime"
     for x, y in snake:
         ctx.fillRect(x*CELL, y*CELL, CELL, CELL)
-        
+
     ctx.fillStyle = "white"
     ctx.font = "16px sans-serif"
     ctx.fillText(f"Score: {score}", 10, 20)
@@ -81,7 +80,10 @@ def key(event):
         if [new_dir[0], new_dir[1]] != [-direction[0], -direction[1]]:
             direction[:] = new_dir
 
-document.addEventListener("keydown", key)
+def init():
+    document.addEventListener("keydown", key)
+    global game_loop
+    game_loop = setInterval(move, INITIAL_SPEED)
+    draw()
 
-draw()
-game_loop = setInterval(move, INITIAL_SPEED)
+setTimeout(init, 100) 
