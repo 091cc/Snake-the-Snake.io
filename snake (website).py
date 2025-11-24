@@ -69,14 +69,15 @@ def move():
 def key(event):
     global direction
     event.preventDefault()
+    key_value = event.key
     key_map = {
         "ArrowUp": [0, -1],
         "ArrowDown": [0, 1],
         "ArrowLeft": [-1, 0],
         "ArrowRight": [1, 0]
     }
-    if event.key in key_map:
-        new_dir = key_map[event.key]
+    if key_value in key_map:
+        new_dir = key_map[key_value]
         if [new_dir[0], new_dir[1]] != [-direction[0], -direction[1]]:
             direction[:] = new_dir
 
@@ -86,4 +87,4 @@ def init():
     game_loop = setInterval(move, INITIAL_SPEED)
     draw()
 
-setTimeout(init, 100) 
+setTimeout(init, 100)
