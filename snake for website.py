@@ -13,6 +13,10 @@ key_proxy = create_proxy(None)
 move_proxy = create_proxy(None)
 game_loop = None
 
+INITIAL_SPEED = 200
+MIN_SPEED = 50
+SPEED_DECREMENT = 5
+
 def new_food(snake):
     while True:
         f = [randint(0, WIDTH-1), randint(0, HEIGHT-1)]
@@ -78,21 +82,49 @@ def on_key(event):
     if key == "ArrowLeft" and direction != [1,0]: direction = [-1,0]
     if key == "ArrowRight" and direction != [-1,0]: direction = [1,0]
 
+def on_touch(btn_dir):
+    global direction
+    if btn_dir == "up" and direction != [0,1]: direction=[0,-1]
+    if btn_dir == "down" and direction != [0,-1]: direction=[0,1]
+    if btn_dir == "left" and direction != [1,0]: direction=[-1,0]
+    if btn_dir == "right" and direction != [-1,0]: direction=[1,0]
+
 def start_game():
-    global snake, direction, food, score, move_proxy, game_loop, key_proxy
-    snake = [[WIDTH//4, HEIGHT//2], [WIDTH//4-1, HEIGHT//2]]
+    global snake, direction, food, score, move_proxy, game_loop
+    snake = [[WIDTH//4, HEIGHT//2],[WIDTH//4-1, HEIGHT//2]]
     direction = [1,0]
     score = 0
     food = new_food(snake)
     draw(snake, food, score)
+    speed = max(INITIAL_SPEED - score*SPEED_DECREMENT, MIN_SPEED)
     move_proxy = create_proxy(lambda event=None: run_game())
-    game_loop = setInterval(move_proxy, 200)
+    game_loop = setInterval(move_proxy, speed)
 
 def run_game():
     global snake, direction, food, score, game_loop
     snake, direction, food, score, alive = move(snake, direction, food, score)
-    if not alive:
+    if alive:
+        new_speed = max(INITIAL_SPEED - score*SPEED_DECREMENT, MIN_SPEED)
+        clearInterval(game_loop)
+        game_loop = setInterval(move_proxy, new_speed)
+    else:
         clearInterval(game_loop)
 
 document.addEventListener("keydown", create_proxy(on_key))
+
+# 建立手機觸控按鍵
+dirs = ["up","down","left","right"]
+for d in dirs:
+    btn = document.createElement("button")
+    btn.innerHTML = d.upper()
+    btn.style.position = "absolute"
+    if d=="up": btn.style.bottom="100px"; btn.style.left="80px"
+    if d=="down": btn.style.bottom="20px"; btn.style.left="80px"
+    if d=="left": btn.style.bottom="60px"; btn.style.left="20px"
+    if d=="right": btn.style.bottom="60px"; btn.style.left="140px"
+    btn.style.fontSize="20px"
+    document.body.appendChild(btn)
+    btn_proxy = create_proxy(lambda e, dir=d: on_touch(dir))
+    btn.addEventListener("click", btn_proxy)
+
 start_game()
