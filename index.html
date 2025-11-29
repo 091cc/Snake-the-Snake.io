@@ -1,49 +1,48 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-<meta charset="UTF-8">
-<title>Snake Game</title>
-<link rel="stylesheet" href="https://pyscript.net/releases/2025.11.1/core.css"/>
-<script src="https://pyscript.net/releases/2025.11.1/core.js"></script>
-<style>
-  body { background-color: black; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-  canvas { border: 2px solid white; }
-</style>
-</head>
-<body>
-<canvas id="game" width="600" height="400"></canvas>
-<py-script>
 from js import document, setInterval, clearInterval
-from pyodide.ffi import create_once_callable
+from pyodide.ffi import create_proxy
 from random import randint
 
 canvas = document.getElementById("game")
 ctx = canvas.getContext("2d")
+
 CELL = 20
 WIDTH = canvas.width // CELL
 HEIGHT = canvas.height // CELL
 
-snake = [[WIDTH//4, HEIGHT//2], [WIDTH//4-1, HEIGHT//2], [WIDTH//4-2, HEIGHT//2], [WIDTH//4-3, HEIGHT//2]]
-direction = [1,0]
+snake = [
+    [WIDTH//4, HEIGHT//2],
+    [WIDTH//4-1, HEIGHT//2],
+    [WIDTH//4-2, HEIGHT//2],
+    [WIDTH//4-3, HEIGHT//2]
+]
+
+direction = [1, 0]
 score = 0
+
 INITIAL_SPEED = 150
 MIN_SPEED = 30
 SPEED_DECREMENT = 5
-food = [randint(0,WIDTH-1), randint(0,HEIGHT-1)]
-while food in snake:
-    food = [randint(0,WIDTH-1), randint(0,HEIGHT-1)]
 
-key_proxy = None
+def new_food():
+    while True:
+        f = [randint(0, WIDTH-1), randint(0, HEIGHT-1)]
+        if f not in snake:
+            return f
+
+food = new_food()
 
 def draw():
     ctx.fillStyle = "black"
-    ctx.fillRect(0,0,canvas.width,canvas.height)
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
     ctx.fillStyle = "red"
     ctx.font = f"{CELL}px sans-serif"
     ctx.fillText("", food[0]*CELL, (food[1]+1)*CELL)
+
     ctx.fillStyle = "lime"
-    for x,y in snake:
+    for x, y in snake:
         ctx.fillRect(x*CELL, y*CELL, CELL, CELL)
+
     ctx.fillStyle = "white"
     ctx.font = "16px sans-serif"
     ctx.fillText(f"Score: {score}", 10, 20)
@@ -51,50 +50,57 @@ def draw():
 def game_over():
     clearInterval(game_loop)
     ctx.fillStyle = "white"
-    ctx.font = "20px sans-serif"
-    ctx.fillText(f"Game Over! Score: {score}", 50, canvas.height//2)
+    ctx.font = "30px sans-serif"
+    ctx.fillText("Game Over!", 180, 180)
+    ctx.fillText(f"Score: {score}", 220, 220)
 
 def move():
     global snake, food, score, game_loop
-    new_head = [snake[0][0]+direction[0], snake[0][1]+direction[1]]
-    if new_head in snake or not (0<=new_head[0]<WIDTH) or not (0<=new_head[1]<HEIGHT):
+
+    new_head = [snake[0][0] + direction[0], snake[0][1] + direction[1]]
+
+    if (
+        new_head in snake or
+        new_head[0] < 0 or new_head[0] >= WIDTH or
+        new_head[1] < 0 or new_head[1] >= HEIGHT
+    ):
         game_over()
         return
-    snake.insert(0,new_head)
+
+    snake.insert(0, new_head)
+
     if new_head == food:
         score += 1
-        new_speed = INITIAL_SPEED - score*SPEED_DECREMENT
+        new_speed = INITIAL_SPEED - score * SPEED_DECREMENT
         if new_speed < MIN_SPEED:
             new_speed = MIN_SPEED
+
         clearInterval(game_loop)
-        game_loop = setInterval(move,new_speed)
-        while True:
-            nf = [randint(0,WIDTH-1), randint(0,HEIGHT-1)]
-            if nf not in snake:
-                food[:] = nf
-                break
+        game_loop = setInterval(move_proxy, new_speed)
+
+        globals()['food'] = new_food()
     else:
         snake.pop()
-    draw()
 
-def key(event):
+    draw()
+          
+def on_key(event):
     global direction
-    event.preventDefault()
-    k = event.key
-    m = {"ArrowUp":[0,-1],"ArrowDown":[0,1],"ArrowLeft":[-1,0],"ArrowRight":[1,0]}
-    if k in m:
-        new_dir = m[k]
-        if [new_dir[0],new_dir[1]] != [-direction[0],-direction[1]]:
-            direction[:] = new_dir
+    key = event.key
 
-def init():
-    global game_loop, key_proxy
-    key_proxy = create_once_callable(key)
-    document.addEventListener("keydown", key_proxy)
-    game_loop = setInterval(move,INITIAL_SPEED)
-    draw()
+    if key == "ArrowUp" and direction != [0, 1]:
+        direction = [0, -1]
+    elif key == "ArrowDown" and direction != [0, -1]:
+        direction = [0, 1]
+    elif key == "ArrowLeft" and direction != [1, 0]:
+        direction = [-1, 0]
+    elif key == "ArrowRight" and direction != [-1, 0]:
+        direction = [1, 0]
 
-init()
-</py-script>
-</body>
-</html>
+key_proxy = create_proxy(on_key)
+document.addEventListener("keydown", key_proxy)
+
+move_proxy = create_proxy(move)
+game_loop = setInterval(move_proxy, INITIAL_SPEED)
+
+draw()
